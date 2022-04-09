@@ -14,17 +14,19 @@ import (
 type Server struct {
 	ServerAddr string
 	ServerPort uint
-	// Logging
-	LogLevel string
+	LogLevel   string
 }
 
 // DataBase - database configuration
 type DataBase struct {
-	PostgresIP   string
-	PostgresPort uint
-	PostgresDB   string
-	PostgresUser string
-	PostgresPass string
+	PostgresIP    string
+	PostgresPort  uint
+	PostgresDB    string
+	PostgresUser  string
+	PostgresPass  string
+	DataBaseInit  bool
+	DataBaseDirty bool
+	ForceVersion  uint
 }
 
 // Config - application configuration
@@ -70,11 +72,24 @@ func CheckENV() bool {
 	if !err {
 		return false
 	}
+	_, err = os.LookupEnv("DATABASE_INIT")
+	if !err {
+		return false
+	}
+	_, err = os.LookupEnv("DATABASE_DIRTY")
+	if !err {
+		return false
+	}
+	_, err = os.LookupEnv("FORCE_VERSION")
+	if !err {
+		return false
+	}
 	return true
 }
 
 func ReadConfiguration(logger *logrus.Logger) *Config {
 	config := &Config{&Server{}, &DataBase{}}
+
 	// Server configuration
 	// ServerAddr
 	serverAddr, err := os.LookupEnv("SERVER_ADDR")
@@ -150,6 +165,41 @@ func ReadConfiguration(logger *logrus.Logger) *Config {
 		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
 	}
 	config.DataBase.PostgresPass = postgresPass
+	// DatabaseReconfigure
+	dbReconfigure, err := os.LookupEnv("DATABASE_INIT")
+	if !err {
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+	}
+	var parseBoolErr error
+	config.DataBase.DataBaseInit, parseBoolErr = strconv.ParseBool(dbReconfigure)
+	if parseBoolErr != nil {
+		logger.WithFields(log.Fields{
+			"error": parseBoolErr,
+		}).Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError))
+	}
+	// DataBaseDirty
+	dbDirty, err := os.LookupEnv("DATABASE_DIRTY")
+	if !err {
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+	}
+	config.DataBase.DataBaseDirty, parseBoolErr = strconv.ParseBool(dbDirty)
+	if parseBoolErr != nil {
+		logger.WithFields(log.Fields{
+			"error": parseBoolErr,
+		}).Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError))
+	}
+	// ForceVersion
+	forceVersion, err := os.LookupEnv("FORCE_VERSION")
+	if !err {
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+	}
+	forceVersionUint, convertErr := strconv.Atoi(forceVersion)
+	if convertErr != nil {
+		logger.WithFields(log.Fields{
+			"error": convertErr,
+		}).Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError))
+	}
+	config.DataBase.ForceVersion = uint(forceVersionUint)
 	return config
 }
 
@@ -166,6 +216,7 @@ func DefaultConfiguration() *Config {
 			PostgresDB:   "solib",
 			PostgresUser: "postgres",
 			PostgresPass: "postgres",
+			DataBaseInit: false,
 		},
 	}
 }

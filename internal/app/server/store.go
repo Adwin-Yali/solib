@@ -10,5 +10,11 @@ func (srv *Server) ConfigureStore() error {
 	}
 	srv.store = st
 
+	if srv.config.DataBase.DataBaseInit {
+		if err := st.InitStore(srv.config.DataBase); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
