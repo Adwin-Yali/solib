@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS music (
 
 CREATE TABLE IF NOT EXISTS albums (
     album_id INTEGER NOT NULL,
-    music_info text,
-    music_image text,
+    album_info text,
+    album_image text,
     music_types INTEGER[] NOT NULL,
     CONSTRAINT album_pk PRIMARY KEY (album_id)
 );
