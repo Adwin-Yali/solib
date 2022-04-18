@@ -29,12 +29,17 @@ func New(config *config.Config, logger *logrus.Logger) *Server {
 
 // Start - start server_errors instance
 func (srv *Server) Start() error {
-	srv.ConfigureLogger()
+	if err := srv.ConfigureLogger(); err != nil {
+		return err
+	}
 	srv.ConfigureRouter()
 	if err := srv.ConfigureStore(); err != nil {
 		return err
 	}
-	srv.logger.Info("Starting application...")
-	return http.ListenAndServe(
-		fmt.Sprintf("%s:%s", srv.config.Server.ServerAddr, strconv.Itoa(int(srv.config.Server.ServerPort))), srv.router)
+	instance := fmt.Sprintf("%s:%s",
+		srv.config.Server.ServerAddr,
+		strconv.Itoa(int(srv.config.Server.ServerPort)),
+	)
+	srv.logger.Info(fmt.Sprintf("Starting application (%s)...", instance))
+	return http.ListenAndServe(instance, srv.router)
 }

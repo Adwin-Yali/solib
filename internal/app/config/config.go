@@ -5,7 +5,6 @@ import (
 	"github.com/J4stEu/solib/internal/app/errors/server_errors"
 	"github.com/J4stEu/solib/internal/pkg"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"strconv"
 )
@@ -87,38 +86,33 @@ func CheckENV() bool {
 	return true
 }
 
-func ReadConfiguration(logger *logrus.Logger) *Config {
+func ReadConfiguration(logger *logrus.Logger) (*Config, error) {
 	config := &Config{&Server{}, &DataBase{}}
-
 	// Server configuration
 	// ServerAddr
 	serverAddr, err := os.LookupEnv("SERVER_ADDR")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		return nil, errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError, server_errors.ServerAddrEnvConfErrorMsg)
 	}
 	validServerAddr := pkg.IsValidIP(serverAddr)
 	if !validServerAddr {
-		logger.WithFields(log.Fields{
-			"error": "Invalid server IP address.",
-		}).Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError))
+		return nil, errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError, server_errors.ServerAddrEnvConfErrorMsg)
 	}
 	// ServerPort
 	config.Server.ServerAddr = serverAddr
 	serverPort, err := os.LookupEnv("SERVER_PORT")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		return nil, errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError, server_errors.ServerPortEnvConfErrorMsg)
 	}
 	serverPortUINT, convertErr := strconv.Atoi(serverPort)
 	if convertErr != nil {
-		logger.WithFields(log.Fields{
-			"error": convertErr,
-		}).Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError))
+		return nil, errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError, server_errors.ServerPortEnvConfErrorMsg)
 	}
 	config.Server.ServerPort = uint(serverPortUINT)
 	// LogLevel
 	logLevel, err := os.LookupEnv("LOG_LEVEL")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		logger.Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvReadError, server_errors.ServerLogLvlEnvConfErrorMsg))
 	}
 	config.Server.LogLevel = logLevel
 
@@ -126,81 +120,72 @@ func ReadConfiguration(logger *logrus.Logger) *Config {
 	// PostgresIP
 	postgresIP, err := os.LookupEnv("PG_IP")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		logger.Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvReadError, server_errors.ServerPgAddrEnvConfErrorMsg))
 	}
 	validPostgresIP := pkg.IsValidIP(postgresIP)
 	if !validPostgresIP {
-		logger.WithFields(log.Fields{
-			"error": "Invalid postgres IP address.",
-		}).Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError))
+		logger.Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvReadError, server_errors.ServerPgAddrEnvConfErrorMsg))
 	}
 	config.DataBase.PostgresIP = postgresIP
 	// PostgresPort
 	postgresPort, err := os.LookupEnv("PG_PORT")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		logger.Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvReadError, server_errors.ServerPgPortEnvConfErrorMsg))
 	}
 	postgresPortUINT, convertErr := strconv.Atoi(postgresPort)
 	if convertErr != nil {
-		logger.WithFields(log.Fields{
-			"error": convertErr,
-		}).Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError))
+		logger.Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvReadError, convertErr))
 	}
 	config.DataBase.PostgresPort = uint(postgresPortUINT)
 	// PostgresDB
 	postgresDB, err := os.LookupEnv("PG_DATABASE")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError, server_errors.ServerPgDbEnvConfErrorMsg)
 	}
 	config.DataBase.PostgresDB = postgresDB
 	// PostgresUser
 	postgresUser, err := os.LookupEnv("PG_USER")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError, server_errors.ServerPgUserEnvConfErrorMsg)
 	}
 	config.DataBase.PostgresUser = postgresUser
 	// PostgresPass
 	postgresPass, err := os.LookupEnv("PG_PASSWORD")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError, server_errors.ServerPgPassEnvConfErrorMsg)
 	}
 	config.DataBase.PostgresPass = postgresPass
 	// DatabaseReconfigure
 	dbReconfigure, err := os.LookupEnv("DATABASE_INIT")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError, server_errors.ServerPgRecStatusEnvConfErrorMsg)
 	}
 	var parseBoolErr error
 	config.DataBase.DataBaseInit, parseBoolErr = strconv.ParseBool(dbReconfigure)
 	if parseBoolErr != nil {
-		logger.WithFields(log.Fields{
-			"error": parseBoolErr,
-		}).Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError))
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError, parseBoolErr)
 	}
 	// DataBaseDirty
 	dbDirty, err := os.LookupEnv("DATABASE_DIRTY")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError, server_errors.ServerPgDirtyStatusEnvConfErrorMsg)
 	}
 	config.DataBase.DataBaseDirty, parseBoolErr = strconv.ParseBool(dbDirty)
 	if parseBoolErr != nil {
-		logger.WithFields(log.Fields{
-			"error": parseBoolErr,
-		}).Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError))
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError, parseBoolErr)
 	}
 	// ForceVersion
 	forceVersion, err := os.LookupEnv("FORCE_VERSION")
 	if !err {
-		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError)
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError, server_errors.ServerPgForceVerEnvConfErrorMsg)
 	}
 	forceVersionUint, convertErr := strconv.Atoi(forceVersion)
 	if convertErr != nil {
-		logger.WithFields(log.Fields{
-			"error": convertErr,
-		}).Fatal(errors.SetError(errors.ServerErrorLevel, server_errors.EnvSetError))
+		logger.Fatal(errors.ServerErrorLevel, server_errors.EnvReadError, convertErr)
+
 	}
 	config.DataBase.ForceVersion = uint(forceVersionUint)
-	return config
+	return config, nil
 }
 
 func DefaultConfiguration() *Config {
