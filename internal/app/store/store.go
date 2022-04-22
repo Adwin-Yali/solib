@@ -35,6 +35,10 @@ func (st *Store) Open(config *config.DataBase) error {
 		return errors.SetError(errors.DataBaseErrorLevel, store_errors.DataBaseOpenError, err)
 	}
 	if err = db.Ping(); err != nil {
+		err = db.Close()
+		if err != nil {
+			return errors.SetError(errors.DataBaseErrorLevel, store_errors.DataBaseCloseError, err)
+		}
 		return errors.SetError(errors.DataBaseErrorLevel, store_errors.DataBaseConnectionError, err)
 	}
 	st.db = db

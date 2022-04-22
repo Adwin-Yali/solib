@@ -8,9 +8,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+	"time"
 )
 
-// Server - server_errors structure
+// Server - server structure
 type Server struct {
 	config *config.Config
 	logger *logrus.Logger
@@ -18,7 +19,7 @@ type Server struct {
 	store  *store.Store
 }
 
-// New - new server_errors instance
+// New - new server instance
 func New(config *config.Config, logger *logrus.Logger) *Server {
 	return &Server{
 		config: config,
@@ -27,7 +28,7 @@ func New(config *config.Config, logger *logrus.Logger) *Server {
 	}
 }
 
-// Start - start server_errors instance
+// Start - start server instance
 func (srv *Server) Start() error {
 	if err := srv.ConfigureLogger(); err != nil {
 		return err
@@ -41,5 +42,14 @@ func (srv *Server) Start() error {
 		strconv.Itoa(int(srv.config.Server.ServerPort)),
 	)
 	srv.logger.Info(fmt.Sprintf("Starting application (%s)...", instance))
-	return http.ListenAndServe(instance, srv.router)
+
+	server := &http.Server{
+		Handler: srv.router,
+		Addr:    instance,
+		// Good practice: enforce timeouts for servers you create!
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+
+	return server.ListenAndServe()
 }

@@ -8,6 +8,7 @@ import (
 
 // ConfigureLogger - logger configuration
 func (srv *Server) ConfigureLogger() error {
+	srv.logger.Info("Configuring logger...")
 	var logLevel logrus.Level
 	switch srv.config.Server.LogLevel {
 	case "debug":
